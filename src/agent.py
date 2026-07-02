@@ -10,7 +10,51 @@ from src.api import get_problems, fetch_user_submissions_api, load_user_submissi
 logger = logging.getLogger(__name__)
 
 # Standard Topic Roadmap for beginners who have no active weaknesses
-TOPIC_ROADMAP = ["implementation", "brute force", "greedy", "math", "dp", "graphs"]
+TOPIC_ROADMAP = [
+    "Arrays & Strings",
+    "Hashing",
+    "Two Pointers",
+    "Sliding Window",
+    "Binary Search",
+    "Stack & Queue",
+    "Linked List",
+    "Trees & BST",
+    "Heap",
+    "Backtracking",
+    "Graphs",
+    "Dynamic Programming",
+    "Trie",
+    "Union Find (DSU)",
+    "Segment Tree (basic)",
+    "Bit Manipulation"
+]
+
+ROADMAP_TO_CF = {
+    "Arrays & Strings": ["strings", "implementation", "sortings"],
+    "Hashing": ["hashing"],
+    "Two Pointers": ["two pointers"],
+    "Sliding Window": ["two pointers"],
+    "Binary Search": ["binary search"],
+    "Stack & Queue": ["data structures"],
+    "Linked List": ["data structures"],
+    "Trees & BST": ["trees"],
+    "Heap": ["data structures"],
+    "Backtracking": ["dfs and similar", "brute force"],
+    "Graphs": ["graphs", "shortest paths"],
+    "Dynamic Programming": ["dp"],
+    "Trie": ["strings", "data structures"],
+    "Union Find (DSU)": ["dsu"],
+    "Segment Tree (basic)": ["data structures"],
+    "Bit Manipulation": ["bitmasks", "math"]
+}
+
+# Reverse mapping for quick lookup
+CF_TO_ROADMAP = {}
+for r_tag, cf_tags in ROADMAP_TO_CF.items():
+    for cf_tag in cf_tags:
+        if cf_tag not in CF_TO_ROADMAP:
+            CF_TO_ROADMAP[cf_tag] = []
+        CF_TO_ROADMAP[cf_tag].append(r_tag)
 
 # State definition
 class AgentState(TypedDict):
@@ -106,14 +150,23 @@ def weak_area_analysis_node(state: AgentState) -> Dict[str, Any]:
         verdict = sub["verdict"]
         tags = sub["tags"]
         
+        # Map raw Codeforces tags to our custom Roadmap tags
+        mapped_roadmap_tags = set()
         for tag in tags:
-            if tag not in tag_attempts:
-                tag_attempts[tag] = set()
-                tag_solves[tag] = set()
+            if tag in TOPIC_ROADMAP:
+                mapped_roadmap_tags.add(tag)
+            elif tag in CF_TO_ROADMAP:
+                for r_tag in CF_TO_ROADMAP[tag]:
+                    mapped_roadmap_tags.add(r_tag)
+                    
+        for r_tag in mapped_roadmap_tags:
+            if r_tag not in tag_attempts:
+                tag_attempts[r_tag] = set()
+                tag_solves[r_tag] = set()
             
-            tag_attempts[tag].add(prob_id)
+            tag_attempts[r_tag].add(prob_id)
             if verdict == "OK":
-                tag_solves[tag].add(prob_id)
+                tag_solves[r_tag].add(prob_id)
                 
     weak_tags_list = []
     for tag, attempts_set in tag_attempts.items():
@@ -145,7 +198,11 @@ def weak_area_analysis_node(state: AgentState) -> Dict[str, Any]:
         for sub in submissions:
             if sub["verdict"] == "OK":
                 for tag in sub["tags"]:
-                    solved_tag_names.add(tag)
+                    if tag in TOPIC_ROADMAP:
+                        solved_tag_names.add(tag)
+                    elif tag in CF_TO_ROADMAP:
+                        for r_tag in CF_TO_ROADMAP[tag]:
+                            solved_tag_names.add(r_tag)
                     
         roadmap_tag = None
         for tag in TOPIC_ROADMAP:
@@ -177,8 +234,16 @@ def search_node(state: AgentState) -> Dict[str, Any]:
         # Get solved problems for this tag
         solved_ratings = []
         for sub in submissions:
-            if sub["verdict"] == "OK" and tag in sub["tags"]:
-                solved_ratings.append(sub["rating"])
+            if sub["verdict"] == "OK":
+                mapped_sub_tags = set()
+                for t in sub["tags"]:
+                    if t in TOPIC_ROADMAP:
+                        mapped_sub_tags.add(t)
+                    elif t in CF_TO_ROADMAP:
+                        for r_t in CF_TO_ROADMAP[t]:
+                            mapped_sub_tags.add(r_t)
+                if tag in mapped_sub_tags:
+                    solved_ratings.append(sub["rating"])
                 
         if solved_ratings:
             avg_rating = sum(solved_ratings) / len(solved_ratings)
@@ -215,12 +280,14 @@ def search_node(state: AgentState) -> Dict[str, Any]:
         lower_bound = max(800, target_rating - offset)
         upper_bound = target_rating + offset
         
+        target_cf_tags = ROADMAP_TO_CF.get(tag, [])
         candidates = []
         for prob in all_problems:
             prob_id = f"{prob['contestId']}{prob['index']}"
             if prob_id in solved_ids or prob_id in recommended_ids:
                 continue
-            if tag in prob["tags"]:
+            has_tag = tag in prob["tags"] or any(cf_t in prob["tags"] for cf_t in target_cf_tags)
+            if has_tag:
                 if lower_bound <= prob["rating"] <= upper_bound:
                     candidates.append(prob)
                     
@@ -237,12 +304,14 @@ def search_node(state: AgentState) -> Dict[str, Any]:
         
     if not chosen_problem:
         # Fallback: ignore rating constraints entirely and find any unsolved problem for this tag
+        target_cf_tags = ROADMAP_TO_CF.get(tag, [])
         candidates = []
         for prob in all_problems:
             prob_id = f"{prob['contestId']}{prob['index']}"
             if prob_id in solved_ids or prob_id in recommended_ids:
                 continue
-            if tag in prob["tags"]:
+            has_tag = tag in prob["tags"] or any(cf_t in prob["tags"] for cf_t in target_cf_tags)
+            if has_tag:
                 candidates.append(prob)
         if candidates:
             chosen_problem = random.choice(candidates)

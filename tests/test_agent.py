@@ -56,10 +56,10 @@ def test_weakness_score_formula_dp():
     result = weak_area_analysis_node(state)
     weak_tags = dict(result["weak_tags"])
     
-    assert "dp" in weak_tags
+    assert "Dynamic Programming" in weak_tags
     expected_score = 0.8 * math.log(11)
-    assert weak_tags["dp"] == pytest.approx(expected_score, abs=1e-5)
-    assert weak_tags["dp"] == pytest.approx(1.918, abs=1e-3)
+    assert weak_tags["Dynamic Programming"] == pytest.approx(expected_score, abs=1e-5)
+    assert weak_tags["Dynamic Programming"] == pytest.approx(1.918, abs=1e-3)
 
 
 def test_weakness_score_formula_math():
@@ -95,10 +95,10 @@ def test_weakness_score_formula_math():
     result = weak_area_analysis_node(state)
     weak_tags = dict(result["weak_tags"])
     
-    assert "math" in weak_tags
+    assert "Bit Manipulation" in weak_tags
     expected_score = 1.0 * math.log(2)
-    assert weak_tags["math"] == pytest.approx(expected_score, abs=1e-5)
-    assert weak_tags["math"] == pytest.approx(0.693, abs=1e-3)
+    assert weak_tags["Bit Manipulation"] == pytest.approx(expected_score, abs=1e-5)
+    assert weak_tags["Bit Manipulation"] == pytest.approx(0.693, abs=1e-3)
 
 
 # --- 2. Rating Target Calculation Tests ---
@@ -476,8 +476,8 @@ def test_roadmap_progression_empty_history():
         "api_key": None
     }
     result = weak_area_analysis_node(state)
-    assert result["current_tag"] == "implementation"
-    assert any("Following roadmap: next topic is 'implementation'" in log for log in result["logs"])
+    assert result["current_tag"] == "Arrays & Strings"
+    assert any("Following roadmap: next topic is 'Arrays & Strings'" in log for log in result["logs"])
 
 
 def test_roadmap_progression_after_solving_first_topic():
@@ -501,17 +501,16 @@ def test_roadmap_progression_after_solving_first_topic():
         "api_key": None
     }
     result = weak_area_analysis_node(state)
-    assert result["current_tag"] == "brute force"
-    assert any("Following roadmap: next topic is 'brute force'" in log for log in result["logs"])
+    assert result["current_tag"] == "Hashing"
+    assert any("Following roadmap: next topic is 'Hashing'" in log for log in result["logs"])
 
 
 def test_roadmap_progression_with_active_weakness():
-    # User solved "implementation" and "brute force", but failed "greedy".
-    # Since "greedy" has a weakness score > 0, they should stay on "greedy" rather than moving to "math".
+    # User solved "implementation" (Arrays & Strings), but failed "hashing" (Hashing).
+    # Since "Hashing" has a weakness score > 0, they should stay on "Hashing" rather than moving to "Two Pointers".
     submissions = [
         {"problem_id": "IMPL1", "tags": ["implementation"], "rating": 800, "verdict": "OK", "timestamp": 0},
-        {"problem_id": "BF1", "tags": ["brute force"], "rating": 900, "verdict": "OK", "timestamp": 0},
-        {"problem_id": "GREEDY_FAIL", "tags": ["greedy"], "rating": 1000, "verdict": "FAILED", "timestamp": 0}
+        {"problem_id": "HASH_FAIL", "tags": ["hashing"], "rating": 1000, "verdict": "FAILED", "timestamp": 0}
     ]
     state: AgentState = {
         "handle": "TestUser",
@@ -529,6 +528,6 @@ def test_roadmap_progression_with_active_weakness():
         "api_key": None
     }
     result = weak_area_analysis_node(state)
-    assert result["current_tag"] == "greedy"
-    assert any("Identified weakest tag: 'greedy'" in log for log in result["logs"])
+    assert result["current_tag"] == "Hashing"
+    assert any("Identified weakest tag: 'Hashing'" in log for log in result["logs"])
 
