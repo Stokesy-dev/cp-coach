@@ -73,7 +73,14 @@ router.get('/github/callback', async (req, res, next) => {
       { expiresIn: '7d' }
     );
 
-    res.redirect(`${FRONTEND_URL}/dashboard?token=${token}`);
+    res.cookie('token', token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+      maxAge: 7 * 24 * 60 * 60 * 1000
+    });
+
+    res.redirect(FRONTEND_URL);
   } catch (error: any) {
     console.error('Auth error:', error.response?.data || error);
     next(error);
@@ -81,6 +88,7 @@ router.get('/github/callback', async (req, res, next) => {
 });
 
 router.post('/logout', (req, res) => {
+  res.clearCookie('token');
   res.json({ message: 'Logged out successfully' });
 });
 

@@ -36,21 +36,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const token = params.get('token');
-    
-    if (token) {
-      localStorage.setItem('token', token);
-      // Clean up URL
-      window.history.replaceState({}, document.title, window.location.pathname);
-    }
-
     checkAuth();
   }, []);
 
   const logout = async () => {
     try {
-      localStorage.removeItem('token');
       await authAPI.logout();
       setUser(null);
     } catch (error) {

@@ -6,9 +6,7 @@ export interface AuthRequest extends Request {
 }
 
 export function requireAuth(req: AuthRequest, res: Response, next: NextFunction) {
-  const authHeader = req.headers.authorization;
-  const token = authHeader && authHeader.startsWith('Bearer ') ? authHeader.split(' ')[1] : req.cookies?.token;
-  
+  const token = req.cookies?.token;
   if (!token) {
     return res.status(401).json({ error: 'Unauthorized: No token provided' });
   }
