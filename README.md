@@ -23,6 +23,12 @@ This project is built using a modern, scalable JavaScript/TypeScript ecosystem:
 
 ---
 
+## 🌐 Live Application
+The frontend is deployed on Vercel and the backend is deployed on Render.
+**👉 [Play with CPCoach Live Here](https://your-vercel-app-url.vercel.app) 👈** *(Replace with exact Vercel URL)*
+
+---
+
 ## 🌟 Key Features
 
 1. **Secure Authentication:** 
