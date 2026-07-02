@@ -74,60 +74,9 @@ graph TD
 
 ---
 
-## ⚙️ Setup and Run Instructions
+## 🌐 Live Application
 
-### Option A: Quick Setup (Auto-install & Run)
-We provide a setup script that creates the virtual environment, updates dependencies, copies configuration templates, and runs the application automatically.
-```bash
-./run.sh
-```
-
-### Option B: Manual Local Setup
-1.  **Install dependencies in a virtual environment:**
-    ```bash
-    python3 -m venv venv
-    source venv/bin/activate
-    pip install -r requirements.txt
-    ```
-2.  **Configure environment:** Create a `.env` file at the root directory and add your Groq API key:
-    ```env
-    GROQ_API_KEY=your_groq_api_key_here
-    ```
-3.  **Launch the Streamlit app:**
-    ```bash
-    streamlit run src/app.py
-    ```
-
----
-
-## 🐳 Docker Deployment
-
-### 1. Run using Docker Compose (Recommended)
-Make sure you have a `.env` file at the root containing your API key, then run:
-```bash
-docker-compose up --build
-```
-The app will build and run on [http://localhost:8501](http://localhost:8501).
-
-### 2. Manual Docker Build & Run
-```bash
-docker build -t cpcoach .
-docker run -p 8501:8501 --env GROQ_API_KEY=gsk_your_key cpcoach
-```
-
----
-
-## 🌐 Cloud Deployment (Streamlit Community Cloud)
-
-To share this app publicly so anyone can access it:
-1.  Push this codebase to a public **GitHub** repository.
-2.  Go to [Streamlit Community Cloud](https://share.streamlit.io/) and click **New app**.
-3.  Select your repository, branch, and set main file path to `src/app.py`.
-4.  Expand **Advanced settings** -> **Secrets** and add your Groq API Key:
-    ```toml
-    GROQ_API_KEY = "gsk_your_key_here"
-    ```
-5.  Click **Deploy**! Streamlit will package the app and host it for free.
+You can access the live running dashboard here: [CPCoach App](https://stokesy-dev-cp-coach-srcapp-fmiulr.streamlit.app/)
 
 ---
 
