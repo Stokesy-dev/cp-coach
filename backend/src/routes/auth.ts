@@ -44,7 +44,11 @@ router.get('/github/callback', async (req, res, next) => {
     }
 
     const userResponse = await axios.get('https://api.github.com/user', {
-      headers: { Authorization: `Bearer ${accessToken}` }
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        'User-Agent': 'CP-Coach-App',
+        Accept: 'application/vnd.github.v3+json'
+      }
     });
     
     const { id, login, avatar_url } = userResponse.data;
@@ -77,7 +81,8 @@ router.get('/github/callback', async (req, res, next) => {
     });
 
     res.redirect(FRONTEND_URL);
-  } catch (error) {
+  } catch (error: any) {
+    console.error('Auth error:', error.response?.data || error);
     next(error);
   }
 });
