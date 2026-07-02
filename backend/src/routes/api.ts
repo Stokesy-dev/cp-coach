@@ -6,6 +6,7 @@ import { roadmapTopics, topicToTags, RoadmapTopic } from '../config/roadmap';
 import { calculateInitialTargetRating, adjustTargetRating, getRatingBands } from '../services/rating';
 import { calculateWeaknessScore } from '../services/weakness';
 import { generateRecommendationRationale } from '../services/llm';
+import { generateTargetRecommendation } from '../services/recommendationEngine';
 
 const router = Router();
 const prisma = new PrismaClient();
@@ -136,65 +137,29 @@ router.post('/recommend', async (req: AuthRequest, res: Response, next) => {
       return;
     }
 
-    const progressWithWeakness = progress.map(p => ({
-      ...p,
-      weaknessScore: calculateWeaknessScore(p.attemptedCount, p.solvedCount)
-    }));
-
-    progressWithWeakness.sort((a, b) => b.weaknessScore - a.weaknessScore);
-    const weakestTopic = progressWithWeakness[0];
-
+    // Fetch all external data
     const problems = await fetchAllProblems();
     const submissions = await fetchUserSubmissions(user.codeforcesHandle);
+    
+    // Compute solved problem IDs
     const solvedProbIds = new Set(
       submissions.filter(s => s.verdict === 'OK').map(s => `${s.problem.contestId}${s.problem.index}`)
     );
 
-    const topicTags = topicToTags[weakestTopic.topic as RoadmapTopic];
-    const candidateProblems = problems.filter(p => {
-      const probId = `${p.contestId}${p.index}`;
-      if (solvedProbIds.has(probId)) return false;
-      return p.tags && p.tags.some(tag => topicTags.includes(tag));
-    });
+    // Call the pure Recommendation Engine
+    const recommendation = await generateTargetRecommendation(
+      progress,
+      problems,
+      solvedProbIds,
+      generateRecommendationRationale
+    );
 
-    const bands = getRatingBands(weakestTopic.targetRating);
-    let selectedProblem = null;
-
-    for (const band of bands) {
-      const matched = candidateProblems.filter(p => 
-        p.rating !== undefined && p.rating >= band.min && p.rating <= band.max
-      );
-      if (matched.length > 0) {
-        selectedProblem = matched[Math.floor(Math.random() * matched.length)];
-        break;
-      }
-    }
-
-    if (!selectedProblem && candidateProblems.length > 0) {
-      selectedProblem = candidateProblems[Math.floor(Math.random() * candidateProblems.length)];
-    }
-
-    if (!selectedProblem) {
+    if (!recommendation) {
       res.status(404).json({ error: 'No recommended problems found for this topic' });
       return;
     }
 
-    const rationale = await generateRecommendationRationale(
-      weakestTopic.topic,
-      weakestTopic.targetRating,
-      selectedProblem.name,
-      selectedProblem.rating
-    );
-
-    res.json({
-      title: selectedProblem.name,
-      url: `https://codeforces.com/contest/${selectedProblem.contestId}/problem/${selectedProblem.index}`,
-      rating: selectedProblem.rating,
-      tags: selectedProblem.tags,
-      topic: weakestTopic.topic,
-      rationale,
-      problemId: `${selectedProblem.contestId}${selectedProblem.index}`
-    });
+    res.json(recommendation);
 
   } catch (error) {
     next(error);
