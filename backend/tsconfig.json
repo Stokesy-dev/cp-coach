@@ -10,7 +10,7 @@
     "module": "commonjs",
     "target": "es2022",
     "esModuleInterop": true,
-    "types": ["node", "jest"],
+    "types": ["node"],
     "ignoreDeprecations": "6.0",
     // For nodejs:
     // "lib": ["esnext"],
