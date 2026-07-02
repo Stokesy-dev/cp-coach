@@ -53,9 +53,9 @@ The workflow is modeled as an explicit state machine:
 ```mermaid
 graph TD
     START([START]) --> Router{Router}
-    Router -- Feedback present --> ProcessFeedback[Process Feedback Node]
-    Router -- Submissions empty --> Ingest[Ingest Node]
-    Router -- Has submissions, no active recommendation --> Analyze[Weak-Area Analysis Node]
+    Router -->|Feedback present| ProcessFeedback[Process Feedback Node]
+    Router -->|Submissions empty| Ingest[Ingest Node]
+    Router -->|Has submissions, no active recommendation| Analyze[Weak-Area Analysis Node]
     
     Ingest --> Analyze
     Analyze --> Search[Search Node]
@@ -63,8 +63,8 @@ graph TD
     Recommend --> END([END])
     
     ProcessFeedback --> FeedbackBranch{Feedback Branch}
-    FeedbackBranch -- Pass --> ClearAndAnalyze[Clear Feedback & Analyze Node]
-    FeedbackBranch -- Fail --> ClearAndSearch[Clear Feedback & Search Node]
+    FeedbackBranch -->|Pass| ClearAndAnalyze[Clear Feedback & Analyze Node]
+    FeedbackBranch -->|Fail| ClearAndSearch[Clear Feedback & Search Node]
     
     ClearAndAnalyze --> Analyze
     ClearAndSearch --> Search
