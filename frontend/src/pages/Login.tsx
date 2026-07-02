@@ -1,9 +1,14 @@
 import React, { useState } from 'react';
 import { Target, Mail, Lock, User as UserIcon, Loader2 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
+import { Navigate } from 'react-router-dom';
 
 export default function Login() {
-  const { login, register } = useAuth();
+  const { user, login, register } = useAuth();
+
+  if (user) {
+    return <Navigate to="/dashboard" replace />;
+  }
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
