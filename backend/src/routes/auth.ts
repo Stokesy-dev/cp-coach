@@ -39,8 +39,8 @@ router.get('/github/callback', async (req, res, next) => {
 
     const accessToken = tokenResponse.data.access_token;
     if (!accessToken) {
-      res.status(400).json({ error: 'Failed to obtain access token' });
-      return;
+      console.error('GitHub token response error:', tokenResponse.data);
+      return res.status(400).send(`Failed to obtain access token from GitHub: ${tokenResponse.data.error_description || JSON.stringify(tokenResponse.data)}`);
     }
 
     const userResponse = await axios.get('https://api.github.com/user', {
