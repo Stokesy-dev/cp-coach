@@ -9,6 +9,9 @@ from src.api import get_problems, fetch_user_submissions_api, load_user_submissi
 
 logger = logging.getLogger(__name__)
 
+# Standard Topic Roadmap for beginners who have no active weaknesses
+TOPIC_ROADMAP = ["implementation", "brute force", "greedy", "math", "dp", "graphs"]
+
 # State definition
 class AgentState(TypedDict):
     handle: str
@@ -128,13 +131,35 @@ def weak_area_analysis_node(state: AgentState) -> Dict[str, Any]:
     # Format for state
     state_weak_tags = [(item[0], item[1]) for item in weak_tags_list]
     
+    # Filter weak tags to only those with a weakness score > 0
+    actual_weak_tags = [wt for wt in weak_tags_list if wt[1] > 0]
+    
     top_tag = None
-    if weak_tags_list:
-        top_tag = weak_tags_list[0][0]
-        logs.append(f"[Node: Weak-Area Analysis] Identified weakest tag: '{top_tag}' (Weakness score: {weak_tags_list[0][1]:.3f})")
+    if actual_weak_tags:
+        top_tag = actual_weak_tags[0][0]
+        logs.append(f"[Node: Weak-Area Analysis] Identified weakest tag: '{top_tag}' (Weakness score: {actual_weak_tags[0][1]:.3f})")
     else:
-        top_tag = "greedy"  # sensible default
-        logs.append("[Node: Weak-Area Analysis] No submission history found. Defaulting to 'greedy'.")
+        # User has no active weaknesses (empty history or solved all attempted problems)
+        # We walk the TOPIC_ROADMAP and find the first unsolved topic
+        solved_tag_names = set()
+        for sub in submissions:
+            if sub["verdict"] == "OK":
+                for tag in sub["tags"]:
+                    solved_tag_names.add(tag)
+                    
+        roadmap_tag = None
+        for tag in TOPIC_ROADMAP:
+            if tag not in solved_tag_names:
+                roadmap_tag = tag
+                break
+                
+        if roadmap_tag:
+            top_tag = roadmap_tag
+            logs.append(f"[Node: Weak-Area Analysis] No active weaknesses. Following roadmap: next topic is '{top_tag}'.")
+        else:
+            # Fallback if they solved all roadmap topics
+            top_tag = TOPIC_ROADMAP[0]
+            logs.append(f"[Node: Weak-Area Analysis] All roadmap topics solved. Defaulting back to '{top_tag}'.")
         
     return {"weak_tags": state_weak_tags, "current_tag": top_tag, "logs": logs}
 

@@ -454,3 +454,81 @@ def test_recommend_node_mocks_llm(mock_groq_class):
     result = recommend_node(state)
     assert result["recommendation_rationale"] == "Mocked LLM Rationale"
     assert mock_groq_class.called
+
+
+# --- 7. Topic Roadmap Progression Tests ---
+
+def test_roadmap_progression_empty_history():
+    # Empty history should start at the first roadmap topic: "implementation"
+    state: AgentState = {
+        "handle": "TestUser",
+        "csv_path": None,
+        "force_offline": True,
+        "submissions": [],
+        "weak_tags": [],
+        "target_ratings": {},
+        "current_tag": None,
+        "current_problem": None,
+        "recommendation_rationale": None,
+        "feedback": None,
+        "history": [],
+        "logs": [],
+        "api_key": None
+    }
+    result = weak_area_analysis_node(state)
+    assert result["current_tag"] == "implementation"
+    assert any("Following roadmap: next topic is 'implementation'" in log for log in result["logs"])
+
+
+def test_roadmap_progression_after_solving_first_topic():
+    # If the user has solved "implementation", they progress to "brute force"
+    submissions = [
+        {"problem_id": "IMPL1", "tags": ["implementation"], "rating": 800, "verdict": "OK", "timestamp": 0}
+    ]
+    state: AgentState = {
+        "handle": "TestUser",
+        "csv_path": None,
+        "force_offline": True,
+        "submissions": submissions,
+        "weak_tags": [],
+        "target_ratings": {},
+        "current_tag": None,
+        "current_problem": None,
+        "recommendation_rationale": None,
+        "feedback": None,
+        "history": [],
+        "logs": [],
+        "api_key": None
+    }
+    result = weak_area_analysis_node(state)
+    assert result["current_tag"] == "brute force"
+    assert any("Following roadmap: next topic is 'brute force'" in log for log in result["logs"])
+
+
+def test_roadmap_progression_with_active_weakness():
+    # User solved "implementation" and "brute force", but failed "greedy".
+    # Since "greedy" has a weakness score > 0, they should stay on "greedy" rather than moving to "math".
+    submissions = [
+        {"problem_id": "IMPL1", "tags": ["implementation"], "rating": 800, "verdict": "OK", "timestamp": 0},
+        {"problem_id": "BF1", "tags": ["brute force"], "rating": 900, "verdict": "OK", "timestamp": 0},
+        {"problem_id": "GREEDY_FAIL", "tags": ["greedy"], "rating": 1000, "verdict": "FAILED", "timestamp": 0}
+    ]
+    state: AgentState = {
+        "handle": "TestUser",
+        "csv_path": None,
+        "force_offline": True,
+        "submissions": submissions,
+        "weak_tags": [],
+        "target_ratings": {},
+        "current_tag": None,
+        "current_problem": None,
+        "recommendation_rationale": None,
+        "feedback": None,
+        "history": [],
+        "logs": [],
+        "api_key": None
+    }
+    result = weak_area_analysis_node(state)
+    assert result["current_tag"] == "greedy"
+    assert any("Identified weakest tag: 'greedy'" in log for log in result["logs"])
+
