@@ -7,9 +7,9 @@ const router = Router();
 const prisma = new PrismaClient();
 
 router.get('/github', (req, res) => {
-  const GITHUB_CLIENT_ID = process.env.GITHUB_CLIENT_ID;
-  const redirectUri = `https://github.com/login/oauth/authorize?client_id=${GITHUB_CLIENT_ID}&scope=read:user`;
-  res.redirect(redirectUri);
+  const clientId = process.env.GITHUB_CLIENT_ID?.trim();
+  const githubAuthUrl = `https://github.com/login/oauth/authorize?client_id=${clientId}&scope=read:user`;
+  res.redirect(githubAuthUrl);
 });
 
 router.get('/github/callback', async (req, res, next) => {
@@ -28,8 +28,8 @@ router.get('/github/callback', async (req, res, next) => {
     const tokenResponse = await axios.post(
       'https://github.com/login/oauth/access_token',
       {
-        client_id: GITHUB_CLIENT_ID,
-        client_secret: GITHUB_CLIENT_SECRET,
+        client_id: process.env.GITHUB_CLIENT_ID?.trim(),
+        client_secret: process.env.GITHUB_CLIENT_SECRET?.trim(),
         code
       },
       {
