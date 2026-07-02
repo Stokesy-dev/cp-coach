@@ -4,7 +4,14 @@ const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001';
 
 const api = axios.create({
   baseURL: API_URL,
-  withCredentials: true,
+});
+
+api.interceptors.request.use((config) => {
+  const token = localStorage.getItem('token');
+  if (token && config.headers) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
 });
 
 export const authAPI = {
@@ -12,12 +19,17 @@ export const authAPI = {
     const response = await api.get('/api/me');
     return response.data;
   },
+  login: async (credentials: any) => {
+    const response = await api.post('/auth/login', credentials);
+    return response.data;
+  },
+  register: async (credentials: any) => {
+    const response = await api.post('/auth/register', credentials);
+    return response.data;
+  },
   logout: async () => {
     const response = await api.post('/auth/logout');
     return response.data;
-  },
-  getGitHubLoginUrl: () => {
-    return `${API_URL}/auth/github`;
   }
 };
 

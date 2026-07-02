@@ -1,94 +1,80 @@
 import { Router } from 'express';
-import axios from 'axios';
 import jwt from 'jsonwebtoken';
 import { PrismaClient } from '@prisma/client';
+import bcrypt from 'bcryptjs';
 
 const router = Router();
 const prisma = new PrismaClient();
 
-router.get('/github', (req, res) => {
-  const clientId = process.env.GITHUB_CLIENT_ID?.trim();
-  const githubAuthUrl = `https://github.com/login/oauth/authorize?client_id=${clientId}&scope=read:user`;
-  res.redirect(githubAuthUrl);
-});
+const JWT_SECRET = process.env.JWT_SECRET || 'secret';
 
-router.get('/github/callback', async (req, res, next) => {
-  const { code } = req.query;
-  if (!code) {
-    res.status(400).json({ error: 'No code provided' });
-    return;
-  }
-
+router.post('/register', async (req, res, next) => {
   try {
-    const GITHUB_CLIENT_ID = process.env.GITHUB_CLIENT_ID;
-    const GITHUB_CLIENT_SECRET = process.env.GITHUB_CLIENT_SECRET;
-    const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:3000';
-    const JWT_SECRET = process.env.JWT_SECRET || 'secret';
+    const { email, password, username } = req.body;
 
-    const tokenResponse = await axios.post(
-      'https://github.com/login/oauth/access_token',
-      {
-        client_id: process.env.GITHUB_CLIENT_ID?.trim(),
-        client_secret: process.env.GITHUB_CLIENT_SECRET?.trim(),
-        code
-      },
-      {
-        headers: { Accept: 'application/json' }
-      }
-    );
-
-    const accessToken = tokenResponse.data.access_token;
-    if (!accessToken) {
-      console.error('GitHub token response error:', tokenResponse.data);
-      return res.status(400).send(`Failed to obtain access token from GitHub: ${tokenResponse.data.error_description || JSON.stringify(tokenResponse.data)}`);
+    if (!email || !password || !username) {
+      return res.status(400).json({ error: 'Email, password, and username are required' });
     }
 
-    const userResponse = await axios.get('https://api.github.com/user', {
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-        'User-Agent': 'CP-Coach-App',
-        Accept: 'application/vnd.github.v3+json'
-      }
-    });
-    
-    const { id, login, avatar_url } = userResponse.data;
-    const githubId = String(id);
+    const existingUser = await prisma.user.findUnique({ where: { email } });
+    if (existingUser) {
+      return res.status(400).json({ error: 'Email already exists' });
+    }
 
-    const user = await prisma.user.upsert({
-      where: { githubId },
-      update: {
-        username: login,
-        avatarUrl: avatar_url
-      },
-      create: {
-        githubId,
-        username: login,
-        avatarUrl: avatar_url
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    const user = await prisma.user.create({
+      data: {
+        email,
+        password: hashedPassword,
+        username,
+        avatarUrl: `https://api.dicebear.com/7.x/avataaars/svg?seed=${username}`
       }
     });
 
     const token = jwt.sign(
-      { id: user.id, githubId: user.githubId },
+      { id: user.id, email: user.email },
       JWT_SECRET,
       { expiresIn: '7d' }
     );
 
-    res.cookie('token', token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
-      maxAge: 7 * 24 * 60 * 60 * 1000
-    });
+    res.json({ token, user: { id: user.id, username: user.username, email: user.email, avatarUrl: user.avatarUrl } });
+  } catch (error) {
+    next(error);
+  }
+});
 
-    res.redirect(FRONTEND_URL);
-  } catch (error: any) {
-    console.error('Auth error:', error.response?.data || error);
+router.post('/login', async (req, res, next) => {
+  try {
+    const { email, password } = req.body;
+
+    if (!email || !password) {
+      return res.status(400).json({ error: 'Email and password are required' });
+    }
+
+    const user = await prisma.user.findUnique({ where: { email } });
+    if (!user) {
+      return res.status(401).json({ error: 'Invalid email or password' });
+    }
+
+    const isValidPassword = await bcrypt.compare(password, user.password);
+    if (!isValidPassword) {
+      return res.status(401).json({ error: 'Invalid email or password' });
+    }
+
+    const token = jwt.sign(
+      { id: user.id, email: user.email },
+      JWT_SECRET,
+      { expiresIn: '7d' }
+    );
+
+    res.json({ token, user: { id: user.id, username: user.username, email: user.email, avatarUrl: user.avatarUrl, codeforcesHandle: user.codeforcesHandle } });
+  } catch (error) {
     next(error);
   }
 });
 
 router.post('/logout', (req, res) => {
-  res.clearCookie('token');
   res.json({ message: 'Logged out successfully' });
 });
 

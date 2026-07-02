@@ -9,9 +9,10 @@ generator client {
 
 model User {
   id               String            @id @default(uuid())
-  githubId         String            @unique
+  email            String            @unique
+  password         String
   username         String
-  avatarUrl        String
+  avatarUrl        String?
   codeforcesHandle String?
   createdAt        DateTime          @default(now())
   roadmapProgress  RoadmapProgress[]

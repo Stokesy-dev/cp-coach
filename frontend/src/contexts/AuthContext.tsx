@@ -3,9 +3,9 @@ import { authAPI } from '../api';
 
 interface User {
   id: string;
-  githubId: string;
+  email: string;
   username: string;
-  avatarUrl: string;
+  avatarUrl?: string;
   codeforcesHandle?: string | null;
 }
 
@@ -13,6 +13,8 @@ interface AuthContextType {
   user: User | null;
   loading: boolean;
   setUser: React.Dispatch<React.SetStateAction<User | null>>;
+  login: (credentials: any) => Promise<void>;
+  register: (credentials: any) => Promise<void>;
   logout: () => Promise<void>;
   checkAuth: () => Promise<void>;
 }
@@ -39,8 +41,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     checkAuth();
   }, []);
 
+  const login = async (credentials: any) => {
+    const data = await authAPI.login(credentials);
+    localStorage.setItem('token', data.token);
+    setUser(data.user);
+  };
+
+  const register = async (credentials: any) => {
+    const data = await authAPI.register(credentials);
+    localStorage.setItem('token', data.token);
+    setUser(data.user);
+  };
+
   const logout = async () => {
     try {
+      localStorage.removeItem('token');
       await authAPI.logout();
       setUser(null);
     } catch (error) {
@@ -49,7 +64,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading, setUser, logout, checkAuth }}>
+    <AuthContext.Provider value={{ user, loading, setUser, login, register, logout, checkAuth }}>
       {children}
     </AuthContext.Provider>
   );
