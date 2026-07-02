@@ -125,25 +125,10 @@ with st.sidebar:
         st.session_state.agent_state["api_key"] = None
         st.caption("🟡 No Groq Key in `.env` (Template Mode)")
     
-    # Input Source Toggle
-    source_type = st.radio("Select Input Source", ["Codeforces API", "Local fallback CSV"])
-    
-    handle = ""
-    csv_file = None
-    
-    if source_type == "Codeforces API":
-        handle = st.text_input("Codeforces Handle", value="tourist", help="Valid handle on Codeforces")
-        st.session_state.agent_state["csv_path"] = None
-        st.session_state.agent_state["handle"] = handle
-    else:
-        st.info("Using seeded fallback data in `/data` for local testing.")
-        st.session_state.agent_state["handle"] = "LocalUser"
-        # Check if CSV exists
-        default_csv = "data/sample_submissions.csv"
-        if os.path.exists(default_csv):
-            st.session_state.agent_state["csv_path"] = default_csv
-        else:
-            st.error("Fallback CSV not found at `data/sample_submissions.csv`. Please create it first.")
+    # Input Handle
+    handle = st.text_input("Codeforces Handle", value="tourist", help="Valid handle on Codeforces")
+    st.session_state.agent_state["csv_path"] = None
+    st.session_state.agent_state["handle"] = handle
 
     force_offline = st.checkbox("Force Offline Mode (Uses offline problem DB)", value=False)
     st.session_state.agent_state["force_offline"] = force_offline

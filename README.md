@@ -2,7 +2,7 @@
 
 [![Streamlit App](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](https://stokesy-dev-cp-coach-srcapp-fmiulr.streamlit.app/) [![CI Tests](https://github.com/Stokesy-dev/cp-coach/actions/workflows/tests.yml/badge.svg)](https://github.com/Stokesy-dev/cp-coach/actions/workflows/tests.yml)
 
-CPCoach is an agentic competitive programming recommendation coach built using **LangGraph** and **Streamlit**. It automatically analyzes a user's Codeforces history (via API or local CSV fallback), calculates topic weaknesses using attempts-weighted statistics, recommends target problems, and updates difficulty dynamically using a feedback-based loop.
+CPCoach is an agentic competitive programming recommendation coach built using **LangGraph** and **Streamlit**. It automatically analyzes a user's Codeforces history via the public Codeforces API, calculates topic weaknesses using attempts-weighted statistics, recommends target problems, and updates difficulty dynamically using a feedback-based loop.
 
 ---
 
