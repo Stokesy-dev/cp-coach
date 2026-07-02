@@ -1,0 +1,44 @@
+import axios from 'axios';
+
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001';
+
+const api = axios.create({
+  baseURL: API_URL,
+  withCredentials: true,
+});
+
+export const authAPI = {
+  getMe: async () => {
+    const response = await api.get('/api/me');
+    return response.data;
+  },
+  logout: async () => {
+    const response = await api.post('/auth/logout');
+    return response.data;
+  },
+  getGitHubLoginUrl: () => {
+    return `${API_URL}/auth/github`;
+  }
+};
+
+export const userAPI = {
+  linkHandle: async (codeforcesHandle: string) => {
+    const response = await api.post('/api/handle', { codeforcesHandle });
+    return response.data;
+  }
+};
+
+export const roadmapAPI = {
+  getRoadmap: async () => {
+    const response = await api.get('/api/roadmap');
+    return response.data;
+  },
+  getRecommendation: async () => {
+    const response = await api.post('/api/recommend');
+    return response.data;
+  },
+  submitFeedback: async (topic: string, result: 'pass' | 'fail', problemId: string) => {
+    const response = await api.post('/api/feedback', { topic, result, problemId });
+    return response.data;
+  }
+};
