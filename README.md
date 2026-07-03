@@ -25,7 +25,7 @@ This project is built using a modern, scalable JavaScript/TypeScript ecosystem:
 
 ## 🌐 Live Application
 The frontend is deployed on Vercel and the backend is deployed on Render.
-**👉 [Play with CPCoach Live Here]([https://cp-coach-psi.vercel.app/) 👈** *(Replace with exact Vercel URL)*
+**👉 [Play with CPCoach Live Here](https://cp-coach-psi.vercel.app/) 👈**
 
 ---
 
