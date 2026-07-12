@@ -26,12 +26,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [loading, setLoading] = useState(true);
 
   const checkAuth = async () => {
+    // H-4: Don't waste an API call if there's no token
+    let token: string | null = null;
+    try { token = localStorage.getItem('token'); } catch {}
+    if (!token) {
+      setUser(null);
+      setLoading(false);
+      return;
+    }
     setLoading(true);
     try {
       const data = await authAPI.getMe();
       setUser(data);
     } catch (error) {
       setUser(null);
+      localStorage.removeItem('token');
     } finally {
       setLoading(false);
     }

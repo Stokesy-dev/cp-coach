@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { roadmapAPI } from '../api';
+import { roadmapAPI, Recommendation } from '../api';
 import { useNavigate } from 'react-router-dom';
-import { LogOut, Settings as SettingsIcon, BrainCircuit, ExternalLink, Check, X, Loader2 } from 'lucide-react';
+import { LogOut, Settings as SettingsIcon, BrainCircuit, ExternalLink, Check, X, Loader2, AlertCircle } from 'lucide-react';
 
 interface RoadmapItem {
   topic: string;
@@ -18,16 +18,21 @@ export default function Dashboard() {
   const [roadmap, setRoadmap] = useState<RoadmapItem[]>([]);
   const [loadingRoadmap, setLoadingRoadmap] = useState(true);
   
-  const [recommendation, setRecommendation] = useState<any>(null);
+  // L-4: Properly typed recommendation state
+  const [recommendation, setRecommendation] = useState<Recommendation | null>(null);
   const [loadingRec, setLoadingRec] = useState(false);
   const [submittingFeedback, setSubmittingFeedback] = useState(false);
+  
+  // C-3: Error state for user-visible error messages
+  const [error, setError] = useState<string | null>(null);
 
   const fetchRoadmap = async () => {
     try {
       const data = await roadmapAPI.getRoadmap();
       setRoadmap(data);
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
+      setError(err.response?.data?.error || 'Failed to load roadmap data.');
     } finally {
       setLoadingRoadmap(false);
     }
@@ -39,11 +44,13 @@ export default function Dashboard() {
 
   const handleGetRecommendation = async () => {
     setLoadingRec(true);
+    setError(null);
     try {
       const data = await roadmapAPI.getRecommendation();
       setRecommendation(data);
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
+      setError(err.response?.data?.error || 'Failed to get recommendation. The server may be waking up — please try again in a moment.');
     } finally {
       setLoadingRec(false);
     }
@@ -52,12 +59,15 @@ export default function Dashboard() {
   const handleFeedback = async (result: 'pass' | 'fail') => {
     if (!recommendation) return;
     setSubmittingFeedback(true);
+    setError(null);
     try {
       await roadmapAPI.submitFeedback(recommendation.topic, result, recommendation.problemId);
       setRecommendation(null);
       await fetchRoadmap();
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
+      // C-3: Show the error to the user instead of swallowing it silently
+      setError(err.response?.data?.error || 'Failed to submit feedback. Please try again.');
     } finally {
       setSubmittingFeedback(false);
     }
@@ -69,7 +79,13 @@ export default function Dashboard() {
     <div className="min-h-screen p-4 md:p-8 animate-fade-in">
       <header className="glass-card p-6 mb-8 flex flex-col md:flex-row items-center justify-between gap-4">
         <div className="flex items-center gap-4">
-          <img src={user?.avatarUrl} alt="Avatar" className="w-12 h-12 rounded-full border-2 border-primary/50" />
+          {/* L-1: Avatar with fallback */}
+          <img 
+            src={user?.avatarUrl || `https://api.dicebear.com/7.x/avataaars/svg?seed=fallback`} 
+            alt={`${user?.username || 'User'}'s avatar`}
+            className="w-12 h-12 rounded-full border-2 border-primary/50"
+            onError={(e) => { (e.target as HTMLImageElement).src = `https://api.dicebear.com/7.x/avataaars/svg?seed=fallback`; }}
+          />
           <div>
             <h1 className="text-xl font-bold text-white">{user?.username}</h1>
             <p className="text-slate-400 text-sm">Codeforces: {user?.codeforcesHandle}</p>
@@ -84,6 +100,19 @@ export default function Dashboard() {
           </button>
         </div>
       </header>
+
+      {/* C-3: User-visible error banner */}
+      {error && (
+        <div className="glass-card !bg-red-500/10 !border-red-500/30 p-4 mb-8 flex items-start gap-3" role="alert" aria-live="assertive">
+          <AlertCircle className="w-5 h-5 text-red-400 shrink-0 mt-0.5" />
+          <div className="flex-1">
+            <p className="text-red-400 text-sm">{error}</p>
+          </div>
+          <button onClick={() => setError(null)} className="text-red-400 hover:text-red-300 transition-colors">
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <div className="lg:col-span-2 space-y-6">
@@ -115,14 +144,19 @@ export default function Dashboard() {
           </div>
         </div>
 
-        <div className="space-y-6">
+        <div className="space-y-6" aria-live="polite">
           <div className="glass-card p-6">
             <h2 className="text-xl font-bold text-white mb-6">Current Training</h2>
             
             {!recommendation && !loadingRec && (
               <div className="text-center py-8">
                 <p className="text-slate-400 mb-6">Ready for your next challenge?</p>
-                <button onClick={handleGetRecommendation} className="glass-button w-full py-3">
+                {/* M-3: Button is disabled instead of hidden during loading to prevent double-clicks */}
+                <button 
+                  onClick={handleGetRecommendation} 
+                  disabled={loadingRec}
+                  className="glass-button w-full py-3 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
                   Get Recommendation
                 </button>
               </div>
@@ -176,16 +210,16 @@ export default function Dashboard() {
                     <button 
                       onClick={() => handleFeedback('pass')}
                       disabled={submittingFeedback}
-                      className="glass-button !bg-secondary/90 hover:!bg-secondary flex items-center justify-center gap-2"
+                      className="glass-button !bg-secondary/90 hover:!bg-secondary flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                      <Check className="w-4 h-4" /> Solved
+                      {submittingFeedback ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />} Solved
                     </button>
                     <button 
                       onClick={() => handleFeedback('fail')}
                       disabled={submittingFeedback}
-                      className="glass-button !bg-accent/90 hover:!bg-accent flex items-center justify-center gap-2"
+                      className="glass-button !bg-accent/90 hover:!bg-accent flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                      <X className="w-4 h-4" /> Failed
+                      {submittingFeedback ? <Loader2 className="w-4 h-4 animate-spin" /> : <X className="w-4 h-4" />} Failed
                     </button>
                   </div>
                 </div>

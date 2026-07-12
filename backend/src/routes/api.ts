@@ -1,21 +1,23 @@
 import { Router, Response } from 'express';
-import { PrismaClient } from '@prisma/client';
+import prisma from '../lib/prisma';
 import { AuthRequest, requireAuth } from '../middleware/auth';
 import { fetchUserSubmissions, fetchAllProblems } from '../services/codeforces';
 import { roadmapTopics, topicToTags, RoadmapTopic } from '../config/roadmap';
-import { calculateInitialTargetRating, adjustTargetRating, getRatingBands } from '../services/rating';
+import { calculateInitialTargetRating, adjustTargetRating } from '../services/rating';
 import { calculateWeaknessScore } from '../services/weakness';
 import { generateRecommendationRationale } from '../services/llm';
 import { generateTargetRecommendation } from '../services/recommendationEngine';
 
 const router = Router();
-const prisma = new PrismaClient();
 
 router.use(requireAuth);
 
 router.get('/me', async (req: AuthRequest, res: Response, next) => {
   try {
-    const user = await prisma.user.findUnique({ where: { id: req.user!.id } });
+    const user = await prisma.user.findUnique({
+      where: { id: req.user!.id },
+      select: { id: true, email: true, username: true, avatarUrl: true, codeforcesHandle: true }
+    });
     res.json(user);
   } catch (error) {
     next(error);

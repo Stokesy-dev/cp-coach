@@ -14,7 +14,12 @@ export function requireAuth(req: AuthRequest, res: Response, next: NextFunction)
   }
 
   try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'secret');
+    // C-2: Use the same validated JWT_SECRET (crash-on-missing is enforced in auth routes startup)
+    const secret = process.env.JWT_SECRET;
+    if (!secret) {
+      return res.status(500).json({ error: 'Server configuration error' });
+    }
+    const decoded = jwt.verify(token, secret);
     req.user = decoded as { id: string; email: string };
     next();
   } catch (error) {

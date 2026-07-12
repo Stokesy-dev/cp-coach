@@ -6,6 +6,7 @@ const api = axios.create({
   baseURL: API_URL,
 });
 
+// Attach Bearer token to every request
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem('token');
   if (token && config.headers) {
@@ -14,16 +15,31 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
+// H-3: Auto-logout on 401 responses (expired/invalid token)
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response?.status === 401) {
+      localStorage.removeItem('token');
+      // Only redirect if we're not already on the login page
+      if (window.location.pathname !== '/') {
+        window.location.href = '/';
+      }
+    }
+    return Promise.reject(error);
+  }
+);
+
 export const authAPI = {
   getMe: async () => {
     const response = await api.get('/api/me');
     return response.data;
   },
-  login: async (credentials: any) => {
+  login: async (credentials: { email: string; password: string }) => {
     const response = await api.post('/auth/login', credentials);
     return response.data;
   },
-  register: async (credentials: any) => {
+  register: async (credentials: { email: string; password: string; username: string }) => {
     const response = await api.post('/auth/register', credentials);
     return response.data;
   },
@@ -40,12 +56,22 @@ export const userAPI = {
   }
 };
 
+export interface Recommendation {
+  title: string;
+  url: string;
+  rating?: number;
+  tags: string[];
+  topic: string;
+  rationale: string;
+  problemId: string;
+}
+
 export const roadmapAPI = {
   getRoadmap: async () => {
     const response = await api.get('/api/roadmap');
     return response.data;
   },
-  getRecommendation: async () => {
+  getRecommendation: async (): Promise<Recommendation> => {
     const response = await api.post('/api/recommend');
     return response.data;
   },

@@ -1,12 +1,15 @@
 import { Router } from 'express';
 import jwt from 'jsonwebtoken';
-import { PrismaClient } from '@prisma/client';
+import prisma from '../lib/prisma';
 import bcrypt from 'bcryptjs';
 
 const router = Router();
-const prisma = new PrismaClient();
 
-const JWT_SECRET = process.env.JWT_SECRET || 'secret';
+// C-2: Crash on startup if JWT_SECRET is missing instead of using a weak fallback
+const JWT_SECRET = process.env.JWT_SECRET;
+if (!JWT_SECRET) {
+  throw new Error('FATAL: JWT_SECRET environment variable is required. Set it before starting the server.');
+}
 
 router.post('/register', async (req, res, next) => {
   try {
@@ -14,6 +17,11 @@ router.post('/register', async (req, res, next) => {
 
     if (!email || !password || !username) {
       return res.status(400).json({ error: 'Email, password, and username are required' });
+    }
+
+    // H-1: Enforce minimum password length
+    if (password.length < 8) {
+      return res.status(400).json({ error: 'Password must be at least 8 characters long' });
     }
 
     const existingUser = await prisma.user.findUnique({ where: { email } });
