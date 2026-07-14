@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { roadmapAPI, Recommendation } from '../api';
+import { roadmapAPI } from '../api';
+import type { Recommendation } from '../api';
 import { useNavigate } from 'react-router-dom';
 import { LogOut, Settings as SettingsIcon, BrainCircuit, ExternalLink, Check, X, Loader2, AlertCircle } from 'lucide-react';
 
